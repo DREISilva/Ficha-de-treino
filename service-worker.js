@@ -1,5 +1,5 @@
-const CACHE_NAME = "caderno-treino-v2";
-const APP_FILES = ["./", "./index.html", "./styles.css?v=2", "./app.js?v=2", "./manifest.json", "./icon.svg"];
+const CACHE_NAME = "caderno-treino-v3";
+const APP_FILES = ["./", "./index.html", "./styles.css?v=3", "./app.js?v=3", "./manifest.json", "./icon.svg"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_FILES)).then(() => self.skipWaiting()));
 });

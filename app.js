@@ -9,6 +9,7 @@ let data;
 let currentWorkoutId = null;
 let currentView = "home";
 let editMode = false;
+let rpgEditMode = false;
 let deferredInstallPrompt = null;
 let saveTimer;
 
@@ -63,22 +64,48 @@ async function saveState() {
 function scheduleSave() { clearTimeout(saveTimer); saveStatus.textContent="Alteração pendente…"; saveTimer=setTimeout(()=>saveState(),180); }
 async function loadState() {
   try { data=await readStoredState(); if(!data)data=JSON.parse(localStorage.getItem(DB_NAME)||"null"); } catch { try { data=JSON.parse(localStorage.getItem(DB_NAME)||"null"); } catch { data=null; } }
-  if(!data||!Array.isArray(data.workouts)||!Array.isArray(data.sessions)) { data={workouts:JSON.parse(JSON.stringify(seedWorkouts)),sessions:[],version:1}; await saveState(); }
+  if(!data||!Array.isArray(data.workouts)||!Array.isArray(data.sessions)) { data={workouts:JSON.parse(JSON.stringify(seedWorkouts)),sessions:[],version:2}; await saveState(); }
+  if(!data.rpg)data.rpg={character:null,xp:0,claimedMissions:[]};
+  if(!Array.isArray(data.rpg.claimedMissions))data.rpg.claimedMissions=[];
+  if(!Number.isFinite(data.rpg.xp))data.rpg.xp=0;
   renderHome();
 }
 function showToast(message) { toast.textContent=message; toast.classList.add("show"); clearTimeout(showToast.timer); showToast.timer=setTimeout(()=>toast.classList.remove("show"),2600); }
 function setView(view) {
   currentView=view; document.querySelectorAll(".nav-button").forEach(button=>button.classList.toggle("active",button.dataset.view===view));
-  if(view==="history")renderHistory(); else if(!currentWorkoutId)renderHome(); else renderWorkout(currentWorkoutId);
+  if(view==="history")renderHistory(); else if(view==="journey")renderJourney(); else if(!currentWorkoutId)renderHome(); else renderWorkout(currentWorkoutId);
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function getWorkout(id) { return data.workouts.find(workout=>workout.id===id); }
 function completedSessions(id) { return data.sessions.filter(session=>session.workoutId===id&&session.status==="completed").sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.completedAt||"").localeCompare(a.completedAt||"")); }
 function latestSession(id) { return completedSessions(id)[0]||null; }
 
+const heroClasses={guardian:{name:"Guardião",icon:"🛡️",description:"Firmeza para cada etapa"},scout:{name:"Explorador",icon:"🏹",description:"Curiosidade para seguir adiante"},mage:{name:"Alquimista",icon:"🔮",description:"Transforma constância em progresso"}};
+const questBook=[
+  {id:"first-quest",title:"Primeiros passos",description:"Conclua seu primeiro treino nesta jornada.",target:1,reward:30,progress:sessions=>sessions.length?1:0},
+  {id:"three-journeys",title:"Ritmo de explorador",description:"Conclua 3 treinos desde a criação do personagem.",target:3,reward:50,progress:sessions=>sessions.length},
+  {id:"map-af",title:"Mapa A–F",description:"Complete cada um dos seis treinos da ficha inicial uma vez.",target:6,reward:100,progress:sessions=>new Set(sessions.filter(s=>["A","B","C","D","E","F"].includes(s.workoutId)).map(s=>s.workoutId)).size},
+  {id:"field-notes",title:"Diário de campanha",description:"Registre carga e repetições em pelo menos uma série de 5 treinos.",target:5,reward:60,progress:sessions=>sessions.filter(s=>s.exercises?.some(ex=>ex.sets?.some(set=>set.load!==""&&set.reps!==""))).length}
+];
+function characterSessions(){const character=data.rpg?.character;return data.sessions.filter(s=>s.status==="completed"&&character&&(!s.completedAt||s.completedAt>=character.createdAt));}
+function questProgress(quest){return Math.min(quest.target,quest.progress(characterSessions()));}
+function levelInfo(xp){const level=Math.floor(Math.max(0,xp)/100)+1;const into=Math.max(0,xp)%100;return{level,into,needed:100,percent:into};}
+function awardJourneyXp(session){const character=data.rpg.character;if(!character||session.rpgAwarded)return null;const oldLevel=levelInfo(data.rpg.xp).level;session.rpgAwarded=true;data.rpg.xp+=20;let earned=20;const unlocked=[];for(const quest of questBook){if(!data.rpg.claimedMissions.includes(quest.id)&&questProgress(quest)>=quest.target){data.rpg.claimedMissions.push(quest.id);data.rpg.xp+=quest.reward;earned+=quest.reward;unlocked.push(quest.title);}}return{earned,oldLevel,newLevel:levelInfo(data.rpg.xp).level,unlocked};}
+function renderRpgTeaser(){const character=data.rpg?.character;if(!character)return `<button class="journey-teaser" type="button" data-action="go-journey"><span class="teaser-emblem">✦</span><span class="teaser-copy"><strong>Sua jornada começa aqui</strong><small>Crie seu personagem e conquiste XP treinando</small></span><span class="teaser-arrow">›</span></button>`;const level=levelInfo(data.rpg.xp);return `<button class="journey-teaser journey-teaser-active" type="button" data-action="go-journey"><span class="teaser-avatar">${escapeHtml(character.icon)}</span><span class="teaser-copy"><strong>${escapeHtml(character.name)} · Nível ${level.level}</strong><small>${data.rpg.xp} XP · ${level.needed-level.into} XP para o próximo nível</small></span><span class="teaser-arrow">›</span></button>`;}
+function renderJourney(){
+  currentWorkoutId=null;currentView="journey";editMode=false;rpgEditMode=false;mainNav.classList.remove("hidden");
+  const character=data.rpg.character;
+  if(!character){
+    appView.innerHTML=`<section class="journey-intro"><div class="eyebrow">SUA CAMPANHA COMEÇA AGORA</div><h1>Crie seu personagem</h1><p>Escolha um nome e uma classe. Seu personagem evolui com os treinos concluídos e as missões desta ficha.</p><div class="journey-art" aria-hidden="true"><span>✦</span><span>⚔️</span><span>✦</span></div></section><form class="character-form" id="characterForm"><label class="field-label">Nome do personagem<input name="characterName" maxlength="24" required placeholder="Ex.: Davi, o Incansável"></label><fieldset class="class-picker"><legend>Escolha sua classe</legend><div class="class-options">${Object.entries(heroClasses).map(([id,item])=>`<label class="class-option"><input type="radio" name="heroClass" value="${id}" ${id==="guardian"?"checked":""}><span class="class-card"><span class="class-icon">${item.icon}</span><strong>${item.name}</strong><small>${item.description}</small></span></label>`).join("")}</div></fieldset><button class="button journey-create" type="submit">Criar personagem</button><p class="local-note">Personagem, XP e missões ficam salvos neste aparelho.</p></form>`;return;
+  }
+  if(rpgEditMode){appView.innerHTML=`<button class="back-button" type="button" data-action="cancel-character-edit">← Voltar à jornada</button><h1>Personalizar personagem</h1><form class="character-form" id="characterForm"><label class="field-label">Nome do personagem<input name="characterName" maxlength="24" required value="${escapeHtml(character.name)}"></label><fieldset class="class-picker"><legend>Classe</legend><div class="class-options">${Object.entries(heroClasses).map(([id,item])=>`<label class="class-option"><input type="radio" name="heroClass" value="${id}" ${character.classId===id?"checked":""}><span class="class-card"><span class="class-icon">${item.icon}</span><strong>${item.name}</strong><small>${item.description}</small></span></label>`).join("")}</div></fieldset><button class="button journey-create" type="submit">Salvar personagem</button></form>`;return;}
+  const info=levelInfo(data.rpg.xp);const missions=characterSessions();
+  appView.innerHTML=`<section class="hero-panel"><div class="hero-spark hero-spark-one">✦</div><div class="hero-spark hero-spark-two">✧</div><div class="hero-topline"><span class="eyebrow">SUA JORNADA</span><button class="hero-edit" type="button" data-action="edit-character">Editar</button></div><div class="hero-character"><div class="hero-avatar">${escapeHtml(character.icon)}</div><div><h1>${escapeHtml(character.name)}</h1><p>${escapeHtml(heroClasses[character.classId]?.name||"Aventureiro")} · Nível ${info.level}</p></div></div><div class="xp-row"><span>Experiência</span><strong>${data.rpg.xp} XP</strong></div><div class="xp-track"><span style="width:${info.percent}%"></span></div><small class="xp-caption">${info.into}/100 XP para o próximo nível</small></section><div class="journey-rules"><span>⚑</span><p>Treinos concluídos dão <strong>20 XP</strong>. Missões concedem XP extra. Dias de descanso não tiram pontos.</p></div><div class="section-heading quest-heading"><div><h2>Quadro de missões</h2><span class="muted" style="font-size:12px">${questBook.filter(q=>data.rpg.claimedMissions.includes(q.id)).length} de ${questBook.length} concluídas</span></div></div><div class="quest-list">${questBook.map(quest=>{const progress=questProgress(quest);const claimed=data.rpg.claimedMissions.includes(quest.id);return `<article class="quest-card ${claimed?"quest-done":""}"><div class="quest-icon">${claimed?"✓":"⚑"}</div><div class="quest-content"><div class="quest-title-row"><h3>${escapeHtml(quest.title)}</h3><span class="quest-reward">+${quest.reward} XP</span></div><p>${escapeHtml(quest.description)}</p><div class="quest-progress-row"><div class="quest-track"><span style="width:${Math.round(progress/quest.target*100)}%"></span></div><small>${progress}/${quest.target}</small></div></div></article>`;}).join("")}</div><p class="local-note">Missões são marcos pessoais sem prazo. Sua ficha e seu progresso permanecem neste aparelho.</p>`;
+}
+
 function renderHome() {
-  currentWorkoutId=null; editMode=false; mainNav.classList.remove("hidden");
-  appView.innerHTML=`<h1>Minha ficha</h1><p class="subheading">Escolha o treino de hoje. Sua ficha pode ser ajustada sempre que precisar.</p>
+  currentWorkoutId=null; currentView="home";editMode=false; mainNav.classList.remove("hidden");document.querySelectorAll(".nav-button").forEach(button=>button.classList.toggle("active",button.dataset.view==="home"));
+  appView.innerHTML=`${renderRpgTeaser()}<h1>Minha ficha</h1><p class="subheading">Escolha o treino de hoje. Sua ficha pode ser ajustada sempre que precisar.</p>
     <div class="section-heading"><div><h2>Seus treinos</h2><span class="muted" style="font-size:12px">Toque em um dia para abrir</span></div><button class="button button-secondary button-small" type="button" data-action="create-workout">+ Criar treino</button></div>
     <div class="workout-grid">${data.workouts.map(workout=>{const last=latestSession(workout.id);return `<button class="workout-card" type="button" data-open-workout="${escapeHtml(workout.id)}"><span class="day-badge">${escapeHtml(workout.id)}</span><strong>${escapeHtml(workout.name)}</strong><small>${escapeHtml(workout.groups||"Grupos musculares não informados")}</small><small>${workout.exercises.length} exercícios${last?` · último: ${escapeHtml(formatDate(last.date))}` : " · ainda sem histórico"}</small></button>`;}).join("")}</div>
     <p class="subheading" style="margin-top:18px;font-size:12px">A ficha inicial usa os exercícios da imagem. Séries e faixas de repetições começam sem prescrição, para você preencher conforme sua ficha.</p>`;
@@ -132,6 +159,7 @@ function findExercise(workoutId,exerciseId){return getWorkout(workoutId)?.exerci
 function findSession(sessionId){return data.sessions.find(session=>session.id===sessionId);}
 
 mainNav.addEventListener("click",event=>{const button=event.target.closest("[data-view]");if(button)setView(button.dataset.view);});
+appView.addEventListener("submit",async event=>{if(event.target.id!=="characterForm")return;event.preventDefault();const form=new FormData(event.target);const name=String(form.get("characterName")||"").trim();const classId=String(form.get("heroClass")||"guardian");if(!name)return showToast("Digite um nome para o personagem.");const archetype=heroClasses[classId]||heroClasses.guardian;const existing=data.rpg.character;data.rpg.character={name,classId,icon:archetype.icon,createdAt:existing?.createdAt||new Date().toISOString()};if(!existing)data.rpg.xp=0;rpgEditMode=false;await saveState();renderJourney();showToast(existing?"Personagem atualizado.":"Personagem criado. Boa jornada!");});
 appView.addEventListener("input",event=>{
   const workoutEdit=event.target.closest("[data-workout-field]");if(workoutEdit){const workout=getWorkout(currentWorkoutId);if(workout){workout[workoutEdit.dataset.workoutField]=workoutEdit.value;scheduleSave();}return;}
   const edit=event.target.closest("[data-edit-field]");if(edit){const exercise=findExercise(currentWorkoutId,edit.dataset.exercise);if(!exercise)return;exercise[edit.dataset.editField]=edit.value;scheduleSave();if(edit.dataset.editField==="name"){const title=edit.closest(".exercise-card")?.querySelector(".exercise-title");if(title)title.textContent=edit.value||"Novo exercício";}return;}
@@ -141,6 +169,9 @@ appView.addEventListener("change",event=>{const date=event.target.closest("[data
 appView.addEventListener("click",async event=>{
   const card=event.target.closest("[data-open-workout]");if(card){editMode=false;return renderWorkout(card.dataset.openWorkout);}
   const button=event.target.closest("[data-action]");if(!button)return;const action=button.dataset.action;
+  if(action==="go-journey")return setView("journey");
+  if(action==="edit-character"){rpgEditMode=true;return renderJourney();}
+  if(action==="cancel-character-edit"){rpgEditMode=false;return renderJourney();}
   if(action==="home")return renderHome();
   if(action==="back-workout")return renderWorkout(button.dataset.workout);
   if(action==="create-workout"){
@@ -159,7 +190,7 @@ appView.addEventListener("click",async event=>{
   if(action==="resume-session")return renderSession(button.dataset.session);
   if(action==="finish-session"){
     const session=findSession(button.dataset.session);if(!session)return;if(!session.date)return showToast("Escolha a data do treino antes de concluir.");
-    session.status="completed";session.completedAt=new Date().toISOString();await saveState();showToast("Treino concluído e salvo no histórico.");return renderWorkout(session.workoutId);
+    session.status="completed";session.completedAt=new Date().toISOString();const reward=awardJourneyXp(session);await saveState();if(reward){let message=`Treino concluído: +${reward.earned} XP.`;if(reward.unlocked.length)message+=` Missão concluída: ${reward.unlocked.join(", ")}.`;if(reward.newLevel>reward.oldLevel)message+=` Nível ${reward.newLevel}!`;showToast(message);}else showToast("Treino concluído e salvo no histórico.");return renderWorkout(session.workoutId);
   }
   if(action==="add-set"){const session=findSession(button.dataset.session);const exercise=session?.exercises.find(item=>item.exerciseId===button.dataset.exercise);if(exercise&&exercise.sets.length<30){exercise.sets.push({load:"",reps:""});await saveState();renderSession(session.id);}return;}
   if(action==="remove-set"){const session=findSession(button.dataset.session);const exercise=session?.exercises.find(item=>item.exerciseId===button.dataset.exercise);if(exercise){exercise.sets.splice(Number(button.dataset.setIndex),1);await saveState();renderSession(session.id);}return;}
@@ -169,7 +200,7 @@ appView.addEventListener("click",async event=>{
 });
 
 document.querySelector("#backupButton").addEventListener("click",()=>{
-  const blob=new Blob([JSON.stringify({app:"Caderno de Treino",version:1,exportedAt:new Date().toISOString(),data},null,2)],{type:"application/json"});
+  const blob=new Blob([JSON.stringify({app:"Caderno de Treino",version:2,exportedAt:new Date().toISOString(),data},null,2)],{type:"application/json"});
   const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download=`backup-caderno-treino-${localDate()}.json`;document.body.append(link);link.click();link.remove();URL.revokeObjectURL(url);showToast("Backup exportado. Guarde o arquivo em local seguro.");
 });
 document.querySelector("#restoreButton").addEventListener("click",()=>document.querySelector("#restoreInput").click());
@@ -177,10 +208,10 @@ document.querySelector("#restoreInput").addEventListener("change",async event=>{
   const file=event.target.files?.[0];if(!file)return;
   try{const parsed=JSON.parse(await file.text());const imported=parsed.data||parsed;if(!Array.isArray(imported.workouts)||!Array.isArray(imported.sessions))throw new Error("Arquivo incompatível");
     if(!window.confirm("Importar este backup substituirá a ficha e o histórico salvos neste aparelho. Deseja continuar?"))return;
-    data={workouts:imported.workouts,sessions:imported.sessions,version:1};await saveState();showToast("Backup restaurado.");setView("home");
+    data={...imported,workouts:imported.workouts,sessions:imported.sessions,rpg:imported.rpg||data.rpg||{character:null,xp:0,claimedMissions:[]},version:2};await saveState();showToast("Backup restaurado.");setView("home");
   }catch{showToast("Não consegui ler esse backup. Escolha um arquivo JSON exportado pelo app.");}finally{event.target.value="";}
 });
 window.addEventListener("beforeinstallprompt",event=>{event.preventDefault();deferredInstallPrompt=event;document.querySelector("#installButton").classList.remove("hidden");});
 document.querySelector("#installButton").addEventListener("click",async()=>{if(!deferredInstallPrompt)return showToast("Use o menu do navegador e escolha ‘Adicionar à tela inicial’.");deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;document.querySelector("#installButton").classList.add("hidden");});
-if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))navigator.serviceWorker.register("./service-worker.js?v=2").catch(()=>{});
+if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))navigator.serviceWorker.register("./service-worker.js?v=3").catch(()=>{});
 loadState();
