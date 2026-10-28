@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111827">
+  <meta name="description" content="Sua ficha de treino e histórico, salvos no seu aparelho.">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <title>Caderno de Treino</title>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#inicio" aria-label="Caderno de Treino, início">
+      <span class="brand-mark" aria-hidden="true">CT</span>
+      <span><strong>Caderno de Treino</strong><small>Seu treino, no seu ritmo</small></span>
+    </a>
+    <div class="top-actions">
+      <button id="installButton" class="button button-quiet hidden" type="button">Instalar</button>
+      <button id="backupButton" class="button button-quiet" type="button">Exportar</button>
+      <button id="restoreButton" class="button button-quiet" type="button">Restaurar</button>
+      <input id="restoreInput" class="visually-hidden" type="file" accept="application/json,.json">
+    </div>
+  </header>
+  <main class="shell">
+    <div class="privacy-note"><span aria-hidden="true">🔒</span><span>Seus treinos ficam salvos neste aparelho e navegador. Não há sincronização automática.</span></div>
+    <nav id="mainNav" class="main-nav" aria-label="Navegação principal">
+      <button class="nav-button active" data-view="home" type="button">Minha ficha</button>
+      <button class="nav-button" data-view="history" type="button">Histórico</button>
+    </nav>
+    <section id="appView" aria-live="polite"></section>
+    <div id="saveStatus" class="save-status" role="status" aria-live="polite"></div>
+  </main>
+  <footer class="footer"><span>Caderno de Treino</span><span>Dados guardados localmente</span></footer>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
