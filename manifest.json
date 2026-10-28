@@ -1,6 +1,6 @@
 {
-  "name": "Caderno de Treino",
-  "short_name": "Meu Treino",
+  "name": "Crônicas da Jornada · Caderno de Treino",
+  "short_name": "Jornada",
   "description": "Ficha, personagem e histórico de treino salvos no seu aparelho.",
   "lang": "pt-BR",
   "start_url": "./index.html",

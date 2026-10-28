@@ -6,6 +6,7 @@ Aplicativo web pessoal para consultar e editar a ficha A–F, registrar sessões
 
 - Treinos A–F e exercícios transcritos da imagem enviada, com opção de criar novos treinos.
 - Edição dos treinos e exercícios, variações, séries planejadas, faixa de repetições e observações.
+- Exclusão confirmada de exercícios e missões da ficha; as sessões concluídas permanecem no histórico.
 - Registro de carga e repetições por série, com salvamento automático.
 - Conclusão de sessão, histórico e referência da sessão anterior.
 - Jornada RPG local: criação de personagem, classes, níveis, XP e missões ligadas aos treinos concluídos.
@@ -45,3 +46,7 @@ A imagem contém exercícios e variações, mas não contém prescrição de sé
 ## Mecânica RPG inicial
 
 O jogador cria um personagem com nome e uma entre três classes visuais. Cada treino concluído rende 20 XP; cada 100 XP sobe um nível. Quatro missões sem prazo concedem XP extra: o primeiro treino, três treinos, completar a ficha A–F e registrar carga e repetições em cinco sessões. Descanso não reduz XP. O sistema não recomenda exercícios, cargas ou frequência de treino.
+
+## Remoção de itens da ficha
+
+Para excluir um exercício, abra a missão, escolha **Editar ficha** e use **Excluir exercício** no cartão correspondente. Para apagar uma missão inteira, entre em **Editar ficha** e toque em **Excluir missão**. O app pede confirmação; o histórico concluído é mantido. Se houver uma sessão em andamento, o aviso explica que ela também será descartada caso a exclusão seja confirmada.

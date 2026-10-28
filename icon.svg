@@ -1,6 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#111827"/>
-  <rect x="56" y="56" width="400" height="400" rx="92" fill="#4f46e5"/>
-  <path d="M150 144h212v54h-78v171h-58V198h-76z" fill="#fff"/>
-  <circle cx="358" cy="342" r="39" fill="#a5b4fc"/>
+  <defs>
+    <linearGradient id="bg" x1="64" y1="42" x2="448" y2="470" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#211d3d"/>
+      <stop offset="1" stop-color="#59447b"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="145" y1="112" x2="374" y2="407" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f5df9a"/>
+      <stop offset="1" stop-color="#c4953e"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <path d="M256 72 390 123v109c0 94-54 162-134 208-80-46-134-114-134-208V123L256 72Z" fill="url(#gold)"/>
+  <path d="M256 107 359 146v86c0 71-38 126-103 168-65-42-103-97-103-168v-86l103-39Z" fill="#2a2347"/>
+  <path d="m256 153 24 66 70 3-55 43 19 68-58-39-58 39 19-68-55-43 70-3 24-66Z" fill="url(#gold)"/>
+  <circle cx="256" cy="256" r="17" fill="#fff2c9"/>
 </svg>
