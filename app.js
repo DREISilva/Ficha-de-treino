@@ -103,7 +103,7 @@ function renderExerciseCard(exercise,index,isEditing) {
     <label class="field-label">Repetições-alvo<input data-edit-field="repTarget" data-exercise="${escapeHtml(exercise.id)}" value="${escapeHtml(exercise.repTarget)}" placeholder="Ex.: 8–12"></label>
     <label class="field-label field-wide">Observações<textarea data-edit-field="notes" data-exercise="${escapeHtml(exercise.id)}" placeholder="Anote ajustes, preferências ou lembretes">${escapeHtml(exercise.notes)}</textarea></label></div>
     <div class="exercise-tools"><button class="icon-button" type="button" aria-label="Mover para cima" title="Mover para cima" data-action="move-exercise" data-workout="${escapeHtml(currentWorkoutId)}" data-exercise="${escapeHtml(exercise.id)}" data-direction="-1">↑</button><button class="icon-button" type="button" aria-label="Mover para baixo" title="Mover para baixo" data-action="move-exercise" data-workout="${escapeHtml(currentWorkoutId)}" data-exercise="${escapeHtml(exercise.id)}" data-direction="1">↓</button><button class="button button-danger button-small" type="button" data-action="remove-exercise" data-exercise="${escapeHtml(exercise.id)}">Remover</button></div></article>`;
-  const plan=[exercise.plannedSets?`${exercise.plannedSets} séries`:"Séries a definir",exercise.repTarget?`${exercise.repTarget} repetições":"repetições-alvo a definir"].join(" · ");
+  const plan=[exercise.plannedSets?`${exercise.plannedSets} séries`:"Séries a definir",exercise.repTarget?`${exercise.repTarget} repetições`:"Repetições-alvo a definir"].join(" · ");
   return `<article class="exercise-card"><div class="exercise-head"><span class="exercise-number">${String(index+1).padStart(2,"0")}</span><div class="exercise-title-wrap"><h3 class="exercise-title">${escapeHtml(exercise.name)}</h3></div></div>${exercise.variation?`<p class="exercise-variation"><strong>Variação:</strong> ${escapeHtml(exercise.variation)}</p>`:""}${exercise.notes?`<p class="exercise-note">${escapeHtml(exercise.notes)}</p>`:""}<span class="plan-chip">${escapeHtml(plan)}</span></article>`;
 }
 function createSession(workout) {
@@ -182,5 +182,5 @@ document.querySelector("#restoreInput").addEventListener("change",async event=>{
 });
 window.addEventListener("beforeinstallprompt",event=>{event.preventDefault();deferredInstallPrompt=event;document.querySelector("#installButton").classList.remove("hidden");});
 document.querySelector("#installButton").addEventListener("click",async()=>{if(!deferredInstallPrompt)return showToast("Use o menu do navegador e escolha ‘Adicionar à tela inicial’.");deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;document.querySelector("#installButton").classList.add("hidden");});
-if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))navigator.serviceWorker.register("./service-worker.js").catch(()=>{});
+if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))navigator.serviceWorker.register("./service-worker.js?v=2").catch(()=>{});
 loadState();

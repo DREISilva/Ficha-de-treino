@@ -31,6 +31,12 @@ A publicação requer uma conta GitHub e um repositório público. Os arquivos d
 
 O GitHub Pages está disponível gratuitamente para repositórios públicos no plano gratuito do GitHub. O código-fonte publicado será visível a qualquer pessoa. Não coloque dados pessoais ou arquivos de backup dentro do repositório.
 
+## Corrigir a versão que já está publicada
+
+Se a página abrir sem os treinos, substitua no repositório os arquivos `index.html`, `app.js` e `service-worker.js` pelos desta pasta e confirme o commit. Para simplificar, você também pode substituir todos os arquivos do app pelos arquivos desta pasta. No GitHub, abra o repositório, escolha **Add file → Upload files**, envie os arquivos extraídos (não apenas o ZIP) para a pasta principal e confirme em **Commit changes**.
+
+Depois, abra novamente o endereço do site no mesmo celular e navegador. A atualização força a troca dos arquivos antigos em cache. Não use “limpar dados do site” nem desinstale o app durante a atualização: os registros de treino ficam armazenados localmente no navegador e podem ser apagados se os dados do site forem removidos.
+
 ## Observação sobre a ficha inicial
 
 A imagem contém exercícios e variações, mas não contém prescrição de séries e repetições. Esses campos começam em branco para você preencher conforme sua ficha. O app não recomenda séries, repetições nem cargas.
